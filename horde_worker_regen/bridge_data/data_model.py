@@ -79,6 +79,9 @@ class reGenBridgeData(CombinedHordeBridgeData):
     This has data-center grade cards in mind, and is not recommended for consumer grade cards.
     """
 
+    out_dir: str = Field(default = "./out")
+    store_images: bool = Field(default = False)
+
     high_performance_mode: bool = Field(default=False)
     """If you have a 4090 or better, set this to true to enable high performance mode."""
 
@@ -113,6 +116,22 @@ class reGenBridgeData(CombinedHordeBridgeData):
 
     Set stats_output_frequency (in seconds) for control over the status message.
     """
+
+    @field_validator("out_dir")
+    def validate_out_dir_is_dir(cls, v: str) -> str:
+        """Validate that the path is a directory."""
+        paths_list = []
+        # Does it specific multiple directories?
+        if ";" in v:
+            for sub_v in v.split(";"):
+                paths_list.append(sub_v)
+        else:
+            paths_list.append(v)
+        for sub_v in paths_list:
+            # See if it's a well-formed path, but don't check if it exists
+            pathlib.Path(sub_v).absolute()
+
+        return v
 
     @model_validator(mode="after")
     def validate_performance_modes(self) -> reGenBridgeData:
