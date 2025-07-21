@@ -2997,6 +2997,27 @@ class HordeWorkerProcessManager:
                 new_submit.fault()
                 return new_submit
 
+            async def _save_image(new_submit: PendingSubmitJob, image_in_buffer_bytes: bytes) -> bool:
+                job_uuid = str(new_submit.job_id)
+
+                file_name = job_uuid + ".webp"
+                out_dir = Path(self.bridge_data.out_dir)
+                out_path = out_dir / file_name
+
+                try:
+                    out_dir.mkdir(parents=True, exists_ok=True)
+
+                    if out_path.exists():
+                        return False
+
+                    with open(out_path, 'wb') as f:
+                        f.write(image_in_buffer_bytes)
+
+                except:
+                    return False
+
+                return True
+
             async def _do_upload(new_submit: PendingSubmitJob, image_in_buffer_bytes: bytes) -> bool:
                 async with self._aiohttp_client_session.put(
                     yarl.URL(new_submit.r2_upload, encoded=True),
@@ -3019,6 +3040,7 @@ class HordeWorkerProcessManager:
                 return True
 
             try:
+                asyncio.create_task(_save_image(new_submit, image_in_buffer.getvalue()))
                 submit_success = await asyncio.wait_for(
                     _do_upload(new_submit, image_in_buffer.getvalue()),
                     timeout=10 + 1,
